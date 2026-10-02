@@ -1,0 +1,332 @@
+@import "tailwindcss";
+
+/*
+ * Ile Aro: one dye, many dips.
+ * Every colour is a shade of indigo, from the dye pit to the pale "resist"
+ * left where starch, raffia or thread kept the dye out.
+ */
+@theme {
+  --color-pit: #141c45; /* deepest indigo: text, primary buttons, the hero cloth */
+  --color-indigo: #25398a; /* links, hover, focus */
+  --color-faded: #4d6299; /* secondary text (5.3:1 on resist) */
+  --color-line: #6b7eb1; /* input borders (3:1 on cloth) */
+  --color-wash: #c7d1e8; /* hairlines and quiet dividers */
+  --color-resist: #eef2f8; /* page background */
+  --color-cloth: #fbfcfe; /* inputs and raised panels */
+  --color-starch: #e4eaf5; /* text on indigo */
+  --color-alert: #a3262a; /* errors only */
+
+  --font-display: "Big Shoulders Stencil Variable", "Arial Narrow", sans-serif;
+  --font-sans: "Commissioner Variable", "Segoe UI", system-ui, sans-serif;
+
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
+}
+
+@layer base {
+  html {
+    background: var(--color-resist);
+    color: var(--color-pit);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    font-variation-settings: "FLAR" 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-indigo);
+    outline-offset: 2px;
+  }
+
+  .on-indigo :focus-visible {
+    outline-color: var(--color-starch);
+  }
+
+  ::selection {
+    background: var(--color-pit);
+    color: var(--color-starch);
+  }
+}
+
+/* Display type: the stencil face, cut like the zinc stencils used for eleko. */
+@utility font-stencil {
+  font-family: var(--font-display);
+  font-weight: 750;
+  letter-spacing: 0.005em;
+  line-height: 0.95;
+}
+
+/* Section headings in the text face, with a touch of flare at the terminals. */
+@utility heading-flare {
+  font-variation-settings: "FLAR" 60;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.75rem 1.4rem;
+    font-weight: 650;
+    font-size: var(--text-base);
+    line-height: 1.2;
+    text-decoration: none;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .btn-primary {
+    background: var(--color-pit);
+    color: var(--color-starch);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-indigo);
+  }
+
+  .btn-light {
+    background: var(--color-starch);
+    color: var(--color-pit);
+  }
+
+  .btn-light:hover {
+    background: #ffffff;
+  }
+
+  .btn-outline {
+    border-color: var(--color-pit);
+    color: var(--color-pit);
+    background: transparent;
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-pit);
+    color: var(--color-starch);
+  }
+
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.65rem 0.8rem;
+    background: var(--color-cloth);
+    color: var(--color-pit);
+    border: 1.5px solid var(--color-line);
+    border-radius: 2px;
+    font: inherit;
+  }
+
+  .field:focus-visible {
+    outline: 3px solid var(--color-indigo);
+    outline-offset: 1px;
+    border-color: var(--color-pit);
+  }
+
+  .field[aria-invalid="true"] {
+    border-color: var(--color-alert);
+    border-width: 2px;
+  }
+
+  select.field {
+    appearance: none;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23141c45' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+  }
+
+  textarea.field {
+    min-height: 6rem;
+    resize: vertical;
+  }
+
+  .label {
+    display: block;
+    font-weight: 650;
+    margin-bottom: 0.35rem;
+  }
+
+  .hint {
+    display: block;
+    color: var(--color-faded);
+    font-size: var(--text-sm);
+    margin-top: -0.2rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .error-text {
+    display: block;
+    color: var(--color-alert);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    margin-bottom: 0.35rem;
+  }
+
+  .link {
+    color: var(--color-indigo);
+    text-decoration: underline;
+  }
+
+  .link:hover {
+    color: var(--color-pit);
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* ------------------------------------------------------------------ hero */
+
+/*
+ * The hero is a length of eleko cloth: a grid of hand-painted panels with
+ * pale resist lines between them. On load the cloth "goes into the dye":
+ * each panel darkens from undyed blue to pit indigo in a diagonal wave,
+ * which is the one moment of motion on the site.
+ */
+.hero-cloth {
+  --gap: 6px;
+  display: grid;
+  gap: var(--gap);
+  padding: var(--gap);
+  background: #c9d3ea;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(clamp(104px, 30vw, 150px), auto);
+}
+
+.hero-panel,
+.hero-lead {
+  position: relative;
+  background-color: var(--color-pit);
+  /* Uneven dye and cotton grain, as a tileable SVG noise. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='c' filterUnits='userSpaceOnUse' x='0' y='0' width='320' height='320'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.011 0.017' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.03 0 0 0 0 0.05 0 0 0 0 0.16 1.6 0 0 0 -0.62'/%3E%3C/filter%3E%3Cfilter id='g' filterUnits='userSpaceOnUse' x='0' y='0' width='320' height='320'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.75' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.94 0 0 0 0 1 0.13 0 0 0 0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23c)' opacity='0.5'/%3E%3Crect width='320' height='320' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+.hero-panel::after,
+.hero-lead::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1.5px solid rgb(228 234 245 / 0.55);
+  pointer-events: none;
+}
+
+.hero-panel svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-lead {
+  grid-column: 1 / -1;
+  padding: clamp(1.75rem, 4vw, 3rem) clamp(1.25rem, 3.5vw, 2.75rem);
+}
+
+/* The lead is the first child, so panel n is child n + 1. Phones show one row of three. */
+.hero-panel:nth-child(n + 5) {
+  display: none;
+}
+
+@media (min-width: 40rem) {
+  .hero-cloth {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-rows: minmax(clamp(120px, 15vw, 190px), auto);
+  }
+  .hero-lead {
+    grid-column: span 4;
+    grid-row: span 2;
+  }
+  .hero-panel:nth-child(n + 5) {
+    display: block;
+  }
+  .hero-panel:nth-child(n + 6) {
+    display: none;
+  }
+}
+
+@media (min-width: 64rem) {
+  .hero-cloth {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-auto-rows: minmax(clamp(120px, 12vw, 190px), auto);
+  }
+  .hero-panel:nth-child(n + 6) {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-panel,
+  .hero-lead {
+    animation: dye-dip 1200ms cubic-bezier(0.25, 0.6, 0.3, 1) both;
+    animation-delay: calc(var(--dip, 0) * 90ms);
+  }
+  .hero-lead > * {
+    animation: settle 700ms ease-out both;
+    animation-delay: 550ms;
+  }
+}
+
+@keyframes dye-dip {
+  from {
+    background-color: #b4c2e4;
+  }
+  to {
+    background-color: var(--color-pit);
+  }
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A stitched rule: the alabere running stitch, used to divide sections. */
+.stitch-rule {
+  height: 3px;
+  background-image: linear-gradient(90deg, var(--color-line) 0 7px, transparent 7px 12px);
+  background-size: 12px 3px;
+  border: 0;
+}
+
+.on-indigo .stitch-rule {
+  background-image: linear-gradient(90deg, rgb(228 234 245 / 0.6) 0 7px, transparent 7px 12px);
+}

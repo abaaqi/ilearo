@@ -37,12 +37,14 @@ export function SiteFooter() {
           <p className="mt-3 text-sm text-starch/85">
             Pay on delivery{bankTransfer ? " or by bank transfer" : ""}. Every order is confirmed by email.
           </p>
-          <p className="mt-3 text-sm text-starch/85">
-            Questions? Write to{" "}
-            <a href={`mailto:${email}`} className="text-starch underline">
-              {email}
-            </a>
-          </p>
+          {email ? (
+            <p className="mt-3 text-sm text-starch/85">
+              Questions? Write to{" "}
+              <a href={`mailto:${email}`} className="text-starch underline">
+                {email}
+              </a>
+            </p>
+          ) : null}
           <p className="mt-3 text-sm">
             <Link href="/account" className="text-starch underline">
               Your orders

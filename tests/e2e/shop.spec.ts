@@ -105,8 +105,22 @@ test("the cart flags items that sold out after they were added", async ({ page }
   await expect(page.getByRole("link", { name: "Check out" })).toBeVisible();
 });
 
-test("the health check reports the database", async ({ request }) => {
+test("the setup check reports a healthy shop", async ({ request }) => {
   const response = await request.get("/api/health");
   expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({ ok: true, database: "reachable", products: 14 });
+  expect(await response.json()).toEqual({
+    ok: true,
+    database: "reachable (14 products)",
+    appUrl: "http://localhost:3100 (matches this site)",
+    googleSignIn: "configured; Google's redirect URI list must include http://localhost:3100/api/auth/google/callback",
+    email: "configured",
+    bankTransfer: "offered",
+    contactEmail: "set",
+  });
+});
+
+test("the setup check notices when APP_URL doesn't match the site's address", async ({ request }) => {
+  const body = await (await request.get("http://127.0.0.1:3100/api/health")).json();
+  expect(body.appUrl).toBe("http://localhost:3100, but this site is http://127.0.0.1:3100");
+  expect(body.toFix).toEqual([expect.stringContaining("Set APP_URL to http://127.0.0.1:3100")]);
 });

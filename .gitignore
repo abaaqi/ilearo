@@ -7,9 +7,10 @@
 next-env.d.ts
 *.tsbuildinfo
 
-# env files (keep the example)
+# env files (keep the example) and downloaded credentials
 .env*
 !.env.example
+client_secret*.json
 
 # testing
 /test-results/

@@ -1,14 +1,13 @@
 import "server-only";
+import { cleanEnvValue } from "./env-value";
 
 /**
  * Settings read from environment variables at request time.
  * See .env.example for what each one does.
  */
 
-const trimmed = (value: string | undefined) => {
-  const v = value?.trim();
-  return v ? v : undefined;
-};
+// Ignores surrounding spaces and quotes, which hosting dashboards keep if pasted.
+const trimmed = cleanEnvValue;
 
 /** The site's public address, e.g. https://ilearo.com (no trailing slash). */
 export function appUrl(): string {
@@ -72,6 +71,7 @@ export function bankDetails(): BankDetails | null {
   return { bankName, accountName, accountNumber };
 }
 
-export function supportEmail(): string {
-  return trimmed(process.env.SHOP_SUPPORT_EMAIL) ?? "hello@example.com";
+/** Where customers can write to, or null if SHOP_SUPPORT_EMAIL isn't set. */
+export function supportEmail(): string | null {
+  return trimmed(process.env.SHOP_SUPPORT_EMAIL) ?? null;
 }

@@ -20,9 +20,10 @@ export async function sendOrderConfirmation(orderId: string): Promise<SendResult
       select u.name from orders o join users u on u.id = o.user_id where o.id = ${orderId}
     `;
 
+    const contact = supportEmail();
     const message = renderOrderConfirmation(order, {
       appUrl: appUrl(),
-      supportEmail: supportEmail(),
+      supportEmail: contact,
       bank: bankDetails(),
       accountName: account?.name ?? null,
     });
@@ -33,7 +34,7 @@ export async function sendOrderConfirmation(orderId: string): Promise<SendResult
         subject: message.subject,
         html: message.html,
         text: message.text,
-        replyTo: supportEmail(),
+        replyTo: contact ?? undefined,
         tag: "order-confirmation",
         variables: { order_reference: order.reference },
       },

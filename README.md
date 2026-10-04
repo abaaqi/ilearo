@@ -86,8 +86,10 @@ Notes:
 - On Supabase, the schema turns on row level security with no policies. That keeps these
   tables out of Supabase's public REST API, which this app doesn't use. The app's own
   connection owns the tables, so it isn't affected.
-- `GET /api/health` returns `{"ok":true,...}` when the app can reach the database. It's a
-  quick check after deploying.
+- `GET /api/health` is a setup check. It reports whether the database works, whether
+  `APP_URL` matches the address you opened it on, and which of Google, Mailgun and bank
+  transfer are configured. When something is wrong, its `toFix` list says what to change.
+  It never shows secret values.
 
 ## 2. Google sign-in (Google Cloud Console)
 
@@ -135,16 +137,57 @@ While testing, Mailgun's sandbox domain only delivers to **authorized recipients
 in Mailgun. To check sending, place an order and look at Mailgun's **Logs**, or run
 `select status, error, to_email from email_log order by created_at desc;`.
 
-## Deploying to Vercel
+## Deploying
 
-1. Push the project to GitHub, then **Add New → Project** in Vercel and import it.
-2. Add every variable from `.env.example` under **Settings → Environment Variables**, with
-   `APP_URL` set to your live address (for example `https://ilearo.vercel.app`).
-3. Deploy, then open `/api/health`.
+Whichever host you use, the steps are the same:
+
+1. Add every variable from `.env.example` to the host, with `APP_URL` set to the live
+   address (for example `https://your-site.netlify.app`, no trailing slash).
+2. Deploy. If you change a variable later, **deploy again**: hosts only apply new values on
+   a new deploy.
+3. Open `/api/health` on the live site and fix anything in its `toFix` list.
 4. Add the live callback URL to your Google client (step 2.3 above).
-5. Optional: under **Settings → Functions**, pick the region closest to your database.
 
-Any host that runs Node 20.9+ works too (Render, Railway, a VPS): `npm run build && npm start`.
+Paste values without quotes. The app removes a pair of quotes copied from a `.env` file,
+but other characters around the value will break it.
+
+Only three variables are secrets: `DATABASE_URL`, `GOOGLE_CLIENT_SECRET` and
+`MAILGUN_API_KEY`. The rest are public anyway: they're shown on the site, in emails or in
+Google's sign-in address. Never commit `.env.local` or the `client_secret_….json` file
+Google lets you download (`.gitignore` already excludes both).
+
+**Netlify.** Import the GitHub repository. Netlify recognises Next.js and needs no
+`netlify.toml`. Add the variables under **Site configuration** (called **Project
+configuration** in newer accounts) **→ Environment variables → Add a variable → Import
+from a .env file**.
+Paste your `.env.local` there, with `APP_URL` changed, and keep **All scopes** selected.
+Variables written in `netlify.toml` don't reach the server functions, so don't put them
+there. Netlify stops any request that runs longer than 10 seconds, which is why the app
+gives up connecting to the database after 8.
+
+Netlify also scans every build for the values of variables marked **Contains secret
+values**, and stops the build if one appears in your repo or build files. Mark only the
+three secrets above. If you've already marked others, add one more variable to tell the
+scan to skip them:
+
+```
+SECRETS_SCAN_OMIT_KEYS=APP_URL,SHOP_SUPPORT_EMAIL,MAILGUN_FROM,MAILGUN_DOMAIN,MAILGUN_REGION,GOOGLE_CLIENT_ID,BANK_NAME,BANK_ACCOUNT_NAME,BANK_ACCOUNT_NUMBER
+```
+
+If the scan finds one of the three real secrets in a file in your repo, delete it from the
+repo and replace the secret: create a new one with Google, Mailgun or your database host.
+Treat anything pushed to GitHub as already seen.
+
+**Vercel.** Use **Add New → Project** to import the repository, and add the variables under
+**Settings → Environment Variables**. Under **Settings → Functions** you can pick the region
+closest to your database.
+
+Any host that runs Node 20.9+ also works (Render, Railway, a VPS): `npm run build && npm start`.
+
+If the live site shows "This page didn't load" or "The shop can't load right now", open
+`/api/health`. The usual causes are a missing or mistyped `DATABASE_URL`, a variable added
+without redeploying, or Supabase's direct connection string used instead of the Transaction
+pooler.
 
 ## Changing the shop
 
@@ -176,7 +219,7 @@ db/schema.sql, db/seed.sql     tables and sample catalogue
 scripts/db-setup.ts            npm run db:setup
 src/app/                       pages, plus server actions next to the pages that use them
   api/auth/google/             sign-in start and callback routes
-  api/health/                  database check
+  api/health/                  setup check (database, APP_URL, integrations)
   checkout/actions.ts          validates the form, places the order, schedules the email
 src/lib/
   db.ts, db-url.ts             Postgres client (Supabase/Neon-safe settings)

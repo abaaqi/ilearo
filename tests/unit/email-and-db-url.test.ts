@@ -85,6 +85,13 @@ describe("order confirmation email", () => {
     expect(html).toContain("Ngozi &quot;Zee&quot;");
   });
 
+  it("works without a support address", () => {
+    const { text, html } = renderOrderConfirmation(order, { ...ctx, supportEmail: null });
+    expect(text).toContain("Questions? Just reply to this email.");
+    expect(html).toContain("Questions? Just reply to this email.");
+    expect(html).not.toContain("mailto:");
+  });
+
   it("shows free delivery as free", () => {
     const { text } = renderOrderConfirmation({ ...order, deliveryKobo: 0, totalKobo: order.subtotalKobo }, ctx);
     expect(text).toContain("Delivery   Free");

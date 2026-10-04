@@ -40,14 +40,16 @@ export type Cart = {
 const EMPTY_CART: Cart = { id: null, lines: [], itemCount: 0, subtotalKobo: 0, hasProblems: false };
 
 async function findCartId(): Promise<string | null> {
-  const sql = db();
   const user = await getCurrentUser();
   if (user) {
+    const sql = db();
     const [row] = await sql<{ id: string }[]>`select id from carts where user_id = ${user.id}`;
     return row?.id ?? null;
   }
+  // First-time visitors have no cart cookie, so they never touch the database here.
   const cookieValue = (await cookies()).get(CART_COOKIE)?.value;
   if (!isUuid(cookieValue)) return null;
+  const sql = db();
   const [row] = await sql<{ id: string }[]>`select id from carts where id = ${cookieValue} and user_id is null`;
   return row?.id ?? null;
 }

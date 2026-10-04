@@ -3,6 +3,18 @@
  * postgres.js. Kept free of server-only imports so the setup script and unit
  * tests can use them too.
  */
+import { cleanEnvValue } from "./env-value";
+
+/** DATABASE_URL is missing or can't be read; the message says how to fix it. */
+export class DatabaseConfigError extends Error {
+  constructor(
+    readonly reason: "missing" | "invalid",
+    message: string,
+  ) {
+    super(message);
+    this.name = "DatabaseConfigError";
+  }
+}
 
 // postgres.js forwards unknown query parameters to Postgres as startup
 // settings, and Postgres refuses settings it doesn't recognise. Hosted
@@ -51,4 +63,32 @@ export function connectionSettings(raw: string): ConnectionSettings {
     url: sanitizeDatabaseUrl(raw),
     ssl: explicit ? undefined : isLocalDatabase(raw) ? false : "require",
   };
+}
+
+/**
+ * Reads a DATABASE_URL value (quotes and spaces around it are ignored) and
+ * returns connection settings, or throws a DatabaseConfigError that says
+ * what to change.
+ */
+export function databaseSettings(value: string | undefined): ConnectionSettings {
+  const raw = cleanEnvValue(value);
+  if (!raw) {
+    throw new DatabaseConfigError(
+      "missing",
+      "DATABASE_URL is not set. Add your Supabase or Neon connection string to .env.local, or to your host's environment variables, then restart or redeploy.",
+    );
+  }
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    // handled below
+  }
+  if (!parsed || (parsed.protocol !== "postgres:" && parsed.protocol !== "postgresql:") || !parsed.hostname) {
+    throw new DatabaseConfigError(
+      "invalid",
+      "DATABASE_URL isn't a valid Postgres connection string. Use only the string that starts with postgresql:// (no quotes, nothing in front), and URL-encode special characters in the password: # as %23, / as %2F, ? as %3F, @ as %40.",
+    );
+  }
+  return connectionSettings(raw);
 }

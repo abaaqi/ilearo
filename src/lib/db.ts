@@ -1,6 +1,6 @@
 import "server-only";
 import postgres from "postgres";
-import { connectionSettings } from "./db-url";
+import { databaseSettings } from "./db-url";
 
 export type Sql = postgres.Sql;
 export type TransactionSql = postgres.TransactionSql;
@@ -18,20 +18,16 @@ const globalForDb = globalThis as typeof globalThis & { __ileAroSql?: Sql };
 export function db(): Sql {
   if (globalForDb.__ileAroSql) return globalForDb.__ileAroSql;
 
-  const raw = process.env.DATABASE_URL;
-  if (!raw) {
-    throw new Error(
-      "DATABASE_URL is not set. Add your Supabase or Neon connection string to .env.local (see .env.example).",
-    );
-  }
-
-  const { url, ssl } = connectionSettings(raw);
+  // Throws a DatabaseConfigError (missing or invalid) with a fix in its message.
+  const { url, ssl } = databaseSettings(process.env.DATABASE_URL);
   const client = postgres(url, {
     ...(ssl === undefined ? {} : { ssl }),
     max: Number(process.env.DATABASE_POOL_MAX ?? 5),
     prepare: false,
     idle_timeout: 20,
-    connect_timeout: 15,
+    // Below the 10-second limit Netlify (and Vercel's hobby plan) put on a
+    // request, so a database problem shows the shop's own error page.
+    connect_timeout: 8,
     transform: postgres.camel,
     onnotice: () => {},
   });

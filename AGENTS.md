@@ -15,3 +15,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Money is integer kobo everywhere. Prices and stock always come from the database, never from forms.
 - Orders are placed in one transaction in `src/lib/orders.ts` (cart row and product rows locked `for update`). Keep it that way.
 - Before finishing a change: `npm run check` (lint, types, unit tests) and `npm run test:e2e` (needs local Postgres; see README).
+- The header (`src/components/site-header.tsx`) is on every page and must never throw: it falls back to "signed out, empty cart" if the database fails. Pages that need the database surface errors through `src/app/error.tsx`.
+- `/api/health` is the setup checker (`src/lib/db-diagnostics.ts` explains database errors). Keep it free of secret values.

@@ -10,20 +10,24 @@ import { defineConfig, devices } from "@playwright/test";
  * The database named in the URL is created if missing and wiped on every run.
  */
 const PORT = 3100;
+/** A second copy of the app with no DATABASE_URL, for the "misconfigured host" tests. */
+const BROKEN_PORT = 3101;
 const MOCK_PORT = 4011;
 export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:5432/ile_aro_test";
 export const MOCK_URL = `http://localhost:${MOCK_PORT}`;
 
+// DATABASE_URL and MAILGUN_FROM are wrapped in quotes on purpose: hosting dashboards
+// keep quotes pasted from a .env file, and the app has to cope with that.
 const appEnv = {
-  DATABASE_URL: TEST_DATABASE_URL,
+  DATABASE_URL: `"${TEST_DATABASE_URL}"`,
   APP_URL: `http://localhost:${PORT}`,
   GOOGLE_CLIENT_ID: "test-client.apps.googleusercontent.com",
   GOOGLE_CLIENT_SECRET: "test-secret",
   GOOGLE_OAUTH_MOCK_URL: MOCK_URL,
   MAILGUN_API_KEY: "test-mailgun-key",
   MAILGUN_DOMAIN: "mg.ilearo.test",
-  MAILGUN_FROM: "Ile Aro <orders@mg.ilearo.test>",
+  MAILGUN_FROM: '"Ile Aro <orders@mg.ilearo.test>"',
   MAILGUN_REGION: "us",
   MAILGUN_API_BASE: MOCK_URL,
   SHOP_SUPPORT_EMAIL: "hello@ilearo.test",
@@ -58,6 +62,14 @@ export default defineConfig({
       command: `npx next start -p ${PORT}`,
       url: `http://localhost:${PORT}/signin`,
       env: appEnv,
+      timeout: 120_000,
+      reuseExistingServer: false,
+    },
+    {
+      // An empty value counts as missing, and stops Next.js reading one from .env.local.
+      command: `npx next start -p ${BROKEN_PORT}`,
+      url: `http://localhost:${BROKEN_PORT}/signin`,
+      env: { ...appEnv, APP_URL: `http://localhost:${BROKEN_PORT}`, DATABASE_URL: "" },
       timeout: 120_000,
       reuseExistingServer: false,
     },

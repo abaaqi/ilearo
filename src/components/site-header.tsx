@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser, type SessionUser } from "@/lib/auth/session";
 import { getCart } from "@/lib/cart";
@@ -12,8 +13,24 @@ const LINKS: NavLink[] = [
   ...Object.entries(CATEGORIES).map(([key, category]) => ({ href: `/shop?category=${key}`, label: category.label })),
 ];
 
+/** The signed-in shopper and cart size, or "nobody, empty" if the database can't be reached. */
+async function headerData(): Promise<{ user: SessionUser | null; itemCount: number }> {
+  try {
+    const [user, cart] = await Promise.all([getCurrentUser(), getCart()]);
+    return { user, itemCount: cart.itemCount };
+  } catch (error) {
+    // Next.js signals things like "this page is dynamic" by throwing; let those through.
+    unstable_rethrow(error);
+    // The header is on every page, so a database problem here mustn't take the whole site
+    // down. Pages that need the database show their own error instead.
+    console.error("[header] Couldn't load the account or cart:", error);
+    return { user: null, itemCount: 0 };
+  }
+}
+
 export async function SiteHeader() {
-  const [user, cart] = await Promise.all([getCurrentUser(), getCart()]);
+  const { user, itemCount } = await headerData();
+  const cart = { itemCount };
   const account = user ? { href: "/account", label: "Your account" } : { href: "/signin", label: "Sign in" };
 
   return (

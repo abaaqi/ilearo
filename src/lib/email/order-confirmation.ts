@@ -12,7 +12,8 @@ import type { OrderDetail } from "../orders";
 
 export type EmailContext = {
   appUrl: string;
-  supportEmail: string;
+  /** Shown as a contact address; null when the shop hasn't set one. */
+  supportEmail: string | null;
   bank: { bankName: string; accountName: string; accountNumber: string } | null;
   /** The shopper's own name from their Google account, if we have it. */
   accountName: string | null;
@@ -119,7 +120,7 @@ export function renderOrderConfirmation(
     "",
     `View your order: ${orderUrl}`,
     "",
-    `Questions? Reply to this email or write to ${ctx.supportEmail}.`,
+    ctx.supportEmail ? `Questions? Reply to this email or write to ${ctx.supportEmail}.` : "Questions? Just reply to this email.",
     "",
     SHOP.name,
   ].join("\n");
@@ -218,7 +219,11 @@ export function renderOrderConfirmation(
         </tr>
         <tr>
           <td style="padding:18px 28px 22px;border-top:1px solid ${C.wash};font:13px/1.6 ${FONT};color:${C.faded};">
-            Questions? Reply to this email or write to <a href="mailto:${e(ctx.supportEmail)}" style="color:${C.pit};">${e(ctx.supportEmail)}</a>.<br>
+            ${
+              ctx.supportEmail
+                ? `Questions? Reply to this email or write to <a href="mailto:${e(ctx.supportEmail)}" style="color:${C.pit};">${e(ctx.supportEmail)}</a>.`
+                : "Questions? Just reply to this email."
+            }<br>
             ${e(SHOP.name)}: ${e(SHOP.description)}
           </td>
         </tr>

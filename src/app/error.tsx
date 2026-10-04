@@ -16,6 +16,13 @@ export default function ErrorPage({ error, retry }: { error: Error & { digest?: 
         in a few minutes.
       </p>
       {error.digest ? <p className="mt-2 text-sm text-faded">Error reference: {error.digest}</p> : null}
+      <p className="mt-2 text-sm text-faded">
+        Running this shop?{" "}
+        <a href="/api/health" className="link">
+          Open the setup check
+        </a>{" "}
+        to see what needs fixing.
+      </p>
       <p className="mt-8 flex flex-wrap gap-4">
         <button type="button" onClick={() => retry()} className="btn btn-primary">
           Try again

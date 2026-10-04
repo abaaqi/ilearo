@@ -10,21 +10,23 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { loadEnvConfig } from "@next/env";
 import postgres from "postgres";
-import { connectionSettings } from "../src/lib/db-url";
+import { DatabaseConfigError, databaseSettings, type ConnectionSettings } from "../src/lib/db-url";
 
 async function main() {
   const root = process.cwd();
   loadEnvConfig(root);
 
-  const raw = process.env.DATABASE_URL;
-  if (!raw) {
-    console.error("DATABASE_URL is not set. Copy .env.example to .env.local and fill it in.");
+  let settings: ConnectionSettings;
+  try {
+    settings = databaseSettings(process.env.DATABASE_URL);
+  } catch (error) {
+    console.error(error instanceof DatabaseConfigError ? error.message : error);
     process.exitCode = 1;
     return;
   }
 
   const withSeed = !process.argv.includes("--no-seed");
-  const { url, ssl } = connectionSettings(raw);
+  const { url, ssl } = settings;
   const sql = postgres(url, {
     ...(ssl === undefined ? {} : { ssl }),
     max: 1,

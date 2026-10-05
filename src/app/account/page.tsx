@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireUser } from "@/lib/auth/session";
+import { appSessionCount, requireUser } from "@/lib/auth/session";
 import { listOrdersForUser, ORDER_STATUS_LABELS } from "@/lib/orders";
 import { formatNaira } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Your account" };
 
 export default async function AccountPage() {
   const user = await requireUser("/account");
-  const orders = await listOrdersForUser(user.id);
+  const [orders, phones] = await Promise.all([listOrdersForUser(user.id), appSessionCount(user.id)]);
 
   return (
     <div className="mx-auto max-w-[76rem] px-4 pt-12 sm:px-6 lg:px-8">
@@ -32,6 +32,11 @@ export default async function AccountPage() {
           {user.name ? <p className="text-lg font-semibold">{user.name}</p> : null}
           <p>{user.email}</p>
           <p className="text-sm text-faded">Signed in with Google</p>
+          {phones > 0 ? (
+            <p className="text-sm text-faded">
+              Also signed in on the Ile Aro app on {phones === 1 ? "1 phone" : `${phones} phones`}, sharing this cart.
+            </p>
+          ) : null}
         </div>
         <form action={signOut} className="ml-auto">
           <button type="submit" className="btn btn-outline">

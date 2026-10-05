@@ -113,10 +113,24 @@ test("the setup check reports a healthy shop", async ({ request }) => {
     database: "reachable (14 products)",
     appUrl: "http://localhost:3100 (matches this site)",
     googleSignIn: "configured; Google's redirect URI list must include http://localhost:3100/api/auth/google/callback",
+    mobileApp: "ready",
     email: "configured",
     bankTransfer: "offered",
     contactEmail: "set",
   });
+});
+
+test("the setup check spots a database set up by an older version of the shop", async ({ request }) => {
+  await sql`drop table app_sign_in_codes`;
+  const response = await request.get("/api/health");
+  expect(response.status()).toBe(503);
+  const body = await response.json();
+  expect(body).toMatchObject({
+    ok: false,
+    database: "reachable (14 products), but its tables are from an older version of the shop",
+    mobileApp: "not ready (see toFix)",
+  });
+  expect(body.toFix).toEqual([expect.stringContaining("Run npm run db:setup again")]);
 });
 
 test("the setup check notices when APP_URL doesn't match the site's address", async ({ request }) => {

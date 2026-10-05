@@ -14,6 +14,7 @@
  * This file has no Next.js imports so it can be unit tested on its own.
  */
 import { base64url, createRemoteJWKSet, jwtVerify, type JWTPayload, type JWTVerifyGetKey } from "jose";
+import { isAllowedAppRedirect, isCodeChallenge } from "./app-redirect";
 
 export type OidcProvider = {
   issuers: string[];
@@ -34,6 +35,10 @@ export const GOOGLE_PROVIDER: OidcProvider = {
  * The automated tests point sign-in at a local stand-in for Google by
  * setting GOOGLE_OAUTH_MOCK_URL. Leave it unset everywhere else.
  */
+export function usingMockGoogle(): boolean {
+  return Boolean(process.env.GOOGLE_OAUTH_MOCK_URL?.trim());
+}
+
 export function oidcProvider(): OidcProvider {
   const mock = process.env.GOOGLE_OAUTH_MOCK_URL?.trim();
   if (!mock) return GOOGLE_PROVIDER;
@@ -97,12 +102,17 @@ export function safeReturnTo(value: unknown, fallback = "/"): string {
   }
 }
 
+/** A sign-in started by the mobile app: where to send it back, and the app's PKCE challenge. */
+export type AppSignIn = { redirectUri: string; codeChallenge: string };
+
 /** What we remember between sending someone to Google and their return. */
 export type PendingSignIn = {
   state: string;
   nonce: string;
   verifier: string;
   returnTo: string;
+  /** Present when the mobile app started this sign-in. */
+  app?: AppSignIn;
 };
 
 export function encodePendingSignIn(pending: PendingSignIn): string {
@@ -114,9 +124,16 @@ export function decodePendingSignIn(raw: string | undefined): PendingSignIn | nu
   try {
     const value: unknown = JSON.parse(new TextDecoder().decode(base64url.decode(raw)));
     if (!value || typeof value !== "object") return null;
-    const { state, nonce, verifier, returnTo } = value as Record<string, unknown>;
+    const { state, nonce, verifier, returnTo, app } = value as Record<string, unknown>;
     if (typeof state !== "string" || typeof nonce !== "string" || typeof verifier !== "string") return null;
-    return { state, nonce, verifier, returnTo: safeReturnTo(returnTo) };
+    const pending: PendingSignIn = { state, nonce, verifier, returnTo: safeReturnTo(returnTo) };
+    if (app !== undefined) {
+      // Checked again here, in case the cookie was tampered with.
+      const { redirectUri, codeChallenge } = (app ?? {}) as Record<string, unknown>;
+      if (!isAllowedAppRedirect(redirectUri, { testing: usingMockGoogle() }) || !isCodeChallenge(codeChallenge)) return null;
+      pending.app = { redirectUri, codeChallenge };
+    }
+    return pending;
   } catch {
     return null;
   }

@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "./db";
 import type { SessionUser } from "./auth/session";
 import type { CheckoutInput, CheckoutValues, PaymentMethod } from "./checkout-schema";
-import { lineProblem, type CartProblem } from "./cart";
+import { lineProblem, type CartClient, type CartProblem } from "./cart";
 import { deliveryQuote, isNigerianState } from "./shipping";
 import { generateOrderReference, isOrderReference } from "./reference";
 import { formatNigerianPhone } from "./phone";
@@ -18,6 +18,13 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
+
+/** One line on where payment stands, e.g. "Waiting for your transfer". */
+export function paymentSummary(order: { paymentStatus: PaymentStatus; paymentMethod: PaymentMethod }): string {
+  if (order.paymentStatus === "paid") return "Paid";
+  if (order.paymentStatus === "refunded") return "Refunded";
+  return order.paymentMethod === "bank_transfer" ? "Waiting for your transfer" : "Pay when it arrives";
+}
 
 export type StockProblem = { name: string; problem: CartProblem; available: number; requested: number };
 
@@ -44,8 +51,10 @@ type LockedLine = {
  * the same last item, and a double-submitted form finds an empty cart the
  * second time round.
  */
-export async function placeOrder(user: SessionUser, input: CheckoutInput): Promise<PlaceOrderResult> {
+export async function placeOrder(user: SessionUser, input: CheckoutInput, client: CartClient = "web"): Promise<PlaceOrderResult> {
   return db().begin(async (sql): Promise<PlaceOrderResult> => {
+    // Emptying the cart below tells the other client where the order was placed.
+    await sql`select set_config('ile_aro.client', ${client}, true)`;
     const [cart] = await sql<{ id: string }[]>`select id from carts where user_id = ${user.id} for update`;
     if (!cart) return { ok: false, reason: "empty" };
 
@@ -118,8 +127,8 @@ export async function placeOrder(user: SessionUser, input: CheckoutInput): Promi
       `;
     }
 
+    // The cart_items trigger gives the cart a new version, so the app and website both see it empty.
     await sql`delete from cart_items where cart_id = ${cart.id}`;
-    await sql`update carts set updated_at = now() where id = ${cart.id}`;
 
     return { ok: true, orderId, reference: created.reference };
   });

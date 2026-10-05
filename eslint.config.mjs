@@ -12,5 +12,7 @@ export default defineConfig([
     "next-env.d.ts",
     "playwright-report/**",
     "test-results/**",
+    // The mobile app has its own lint setup (mobile/eslint.config.js).
+    "mobile/**",
   ]),
 ]);

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ProductImage } from "@/components/product-image";
 import { requireUser } from "@/lib/auth/session";
 import { bankDetails } from "@/lib/env";
-import { getOrderForUser, ORDER_STATUS_LABELS, type OrderDetail } from "@/lib/orders";
+import { getOrderForUser, ORDER_STATUS_LABELS, paymentSummary } from "@/lib/orders";
 import { formatNaira } from "@/lib/money";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatNigerianPhone } from "@/lib/phone";
@@ -16,12 +16,6 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   return { title: `Order ${(await params).reference}` };
-}
-
-function paymentLine(order: OrderDetail): string {
-  if (order.paymentStatus === "paid") return "Paid";
-  if (order.paymentStatus === "refunded") return "Refunded";
-  return order.paymentMethod === "bank_transfer" ? "Waiting for your transfer" : "Pay when it arrives";
 }
 
 export default async function OrderPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
@@ -87,7 +81,7 @@ export default async function OrderPage({ params, searchParams }: { params: Para
                 transfer to the rider.
               </p>
             ) : (
-              <p className="mt-2">{paymentLine(order)}.</p>
+              <p className="mt-2">{paymentSummary(order)}.</p>
             )}
           </section>
 
@@ -143,7 +137,7 @@ export default async function OrderPage({ params, searchParams }: { params: Para
               <dt className="text-faded">Order</dt>
               <dd className="font-semibold">{ORDER_STATUS_LABELS[order.status]}</dd>
               <dt className="text-faded">Payment</dt>
-              <dd className="font-semibold">{paymentLine(order)}</dd>
+              <dd className="font-semibold">{paymentSummary(order)}</dd>
               <dt className="text-faded">Method</dt>
               <dd>{PAYMENT_METHOD_LABELS[order.paymentMethod]}</dd>
               <dt className="text-faded">Placed</dt>

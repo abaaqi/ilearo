@@ -13,11 +13,25 @@ export async function GET(request: NextRequest) {
 
   let database: string;
   let databaseOk = false;
+  let schemaCurrent = false;
   try {
     const sql = db();
-    const [row] = await sql<{ products: number }[]>`select count(*)::int as products from products`;
-    databaseOk = true;
+    const [row] = await sql<{ products: number; schemaCurrent: boolean }[]>`
+      select (select count(*)::int from products) as products,
+             exists (select 1 from information_schema.columns
+                     where table_schema = current_schema() and table_name = 'carts' and column_name = 'version')
+             and exists (select 1 from information_schema.tables
+                         where table_schema = current_schema() and table_name = 'app_sign_in_codes') as schema_current
+    `;
+    schemaCurrent = row?.schemaCurrent === true;
+    databaseOk = schemaCurrent;
     database = `reachable (${row?.products ?? 0} products)`;
+    if (!schemaCurrent) {
+      database += ", but its tables are from an older version of the shop";
+      toFix.push(
+        "Run npm run db:setup again with this DATABASE_URL. It adds the live cart and app sign-in tables, and keeps your products, carts and orders.",
+      );
+    }
   } catch (error) {
     const diagnosis = explainDatabaseError(error);
     console.error(`[health] ${diagnosis.problem}${diagnosis.code ? ` (${diagnosis.code})` : ""}:`, error);
@@ -53,6 +67,8 @@ export async function GET(request: NextRequest) {
       database,
       appUrl: appUrlStatus,
       googleSignIn: google ? `configured; Google's redirect URI list must include ${google.redirectUri}` : "not configured",
+      // The app signs in through the same Google client and redirect URI, so it needs nothing extra.
+      mobileApp: google && schemaCurrent ? "ready" : "not ready (see toFix)",
       email: mailgunSettings() ? "configured" : "not configured (confirmation emails are written to the server log instead)",
       bankTransfer: bankDetails() ? "offered" : "not offered",
       contactEmail: contact ? "set" : "not set (no contact address in the footer or on emails)",

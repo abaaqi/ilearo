@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/oidc";
 import { OAUTH_COOKIE, OAUTH_COOKIE_PATH } from "@/lib/auth/constants";
 import { createSession, sessionCookie } from "@/lib/auth/session";
+import { createAppSignInCode, redirectToApp } from "@/lib/auth/app-sign-in";
 import { upsertGoogleUser } from "@/lib/users";
 import { CART_COOKIE, mergeGuestCart } from "@/lib/cart";
 
@@ -33,6 +34,8 @@ export async function GET(request: NextRequest) {
   };
 
   const fail = (code: string) => {
+    // Sign-ins the app started report back to the app, which shows the message.
+    if (pending?.app) return finish(redirectToApp(pending.app.redirectUri, { error: code }));
     const url = new URL("/signin", base);
     url.searchParams.set("error", code);
     if (pending?.returnTo && pending.returnTo !== "/") url.searchParams.set("returnTo", pending.returnTo);
@@ -61,11 +64,19 @@ export async function GET(request: NextRequest) {
     const profile = await verifyIdToken(idToken, { provider, clientId: google.clientId, nonce: pending.nonce });
     if (!profile.emailVerified) return fail("unverified");
 
+    // The same Google account always maps to the same users row, on the website and in the app.
     const userId = await upsertGoogleUser(profile);
+
+    if (pending.app) {
+      // No website cookie: the app swaps this one-time code for its own session.
+      const appCode = await createAppSignInCode(userId, pending.app.codeChallenge);
+      return finish(redirectToApp(pending.app.redirectUri, { code: appCode }));
+    }
+
     const session = await createSession(userId, request.headers.get("user-agent"));
 
     const guestCart = request.cookies.get(CART_COOKIE)?.value;
-    if (guestCart) await mergeGuestCart(guestCart, userId);
+    if (guestCart) await mergeGuestCart(guestCart, userId, "web");
 
     const response = NextResponse.redirect(new URL(pending.returnTo, base));
     response.cookies.set(sessionCookie(session.token, session.expires));

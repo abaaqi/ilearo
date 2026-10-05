@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist-web/
+dist-native/
+web-build/
+expo-env.d.ts
+
+# Native folders, if you ever run `npx expo prebuild`
+/ios
+/android
+
+# Local settings (the shop's address). Copy .env.example to .env.
+.env
+.env*.local
+
+*.log
+.DS_Store

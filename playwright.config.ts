@@ -13,6 +13,8 @@ const PORT = 3100;
 /** A second copy of the app with no DATABASE_URL, for the "misconfigured host" tests. */
 const BROKEN_PORT = 3101;
 const MOCK_PORT = 4011;
+/** The mobile app's web build, talking to the API on PORT (tests/e2e/app-web-server.mjs). */
+const APP_WEB_PORT = 3200;
 export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:5432/ile_aro_test";
 export const MOCK_URL = `http://localhost:${MOCK_PORT}`;
@@ -49,8 +51,19 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: /mobile-app\.spec\.ts/ },
+    // The mobile app itself, run in a phone-sized browser. Needs `npm run build:app-web` first
+    // (`npm run test:app` does both); without the build these tests are skipped.
+    { name: "app-in-browser", use: { ...devices["Pixel 7"] }, testMatch: /mobile-app\.spec\.ts/ },
+  ],
   webServer: [
+    {
+      command: "node tests/e2e/app-web-server.mjs",
+      url: `http://localhost:${APP_WEB_PORT}/__health`,
+      env: { APP_WEB_PORT: String(APP_WEB_PORT), APP_WEB_API: `http://localhost:${PORT}` },
+      reuseExistingServer: false,
+    },
     {
       command: "node tests/e2e/mock-services.mjs",
       url: `${MOCK_URL}/__test/health`,

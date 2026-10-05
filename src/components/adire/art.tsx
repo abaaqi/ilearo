@@ -481,6 +481,12 @@ export function seedFromString(text: string): number {
   return h >>> 0;
 }
 
+/** The pattern's shapes and colours, before any texture is added. Also used for the app's flat SVGs. */
+export function drawArt(spec: ArtSpec): { palette: Palette; content: ReactNode[] } {
+  const palette = PALETTES[spec.tone];
+  return { palette, content: DRAW[spec.pattern](makeRand(spec.seed), palette) };
+}
+
 type AdireArtProps = {
   spec: ArtSpec;
   /** Give a label when the image carries meaning; leave it out when it is decorative. */
@@ -489,8 +495,7 @@ type AdireArtProps = {
 };
 
 export function AdireArt({ spec, label, className }: AdireArtProps) {
-  const c = PALETTES[spec.tone];
-  const content = DRAW[spec.pattern](makeRand(spec.seed), c);
+  const { palette: c, content } = drawArt(spec);
   return (
     <svg
       viewBox="0 0 400 400"

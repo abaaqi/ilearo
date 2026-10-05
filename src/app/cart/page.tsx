@@ -2,26 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductImage } from "@/components/product-image";
 import { SubmitButton } from "@/components/submit-button";
-import { getCart, type CartLine } from "@/lib/cart";
+import { cartProblemText, getCart, type CartLine } from "@/lib/cart";
 import { MAX_PER_ITEM, TECHNIQUES } from "@/lib/catalog";
 import { formatNaira } from "@/lib/money";
 import { FREE_DELIVERY_FROM_KOBO } from "@/lib/shipping";
 import { removeCartLine, updateCartLine } from "./actions";
 
 export const metadata: Metadata = { title: "Your cart" };
-
-function problemText(line: CartLine): string | null {
-  switch (line.problem) {
-    case "unavailable":
-      return "No longer for sale. Remove it to check out.";
-    case "sold-out":
-      return "Sold out since you added it. Remove it to check out.";
-    case "short":
-      return `Only ${line.stock} left. Lower the quantity to check out.`;
-    default:
-      return null;
-  }
-}
 
 function QuantityControl({ line }: { line: CartLine }) {
   const canAdd = line.quantity < Math.min(line.stock, MAX_PER_ITEM) && line.problem !== "unavailable";
@@ -78,7 +65,7 @@ export default async function CartPage() {
       <div className="mt-8 grid gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <ul className="border-t border-wash">
           {cart.lines.map((line) => {
-            const problem = problemText(line);
+            const problem = cartProblemText(line);
             return (
               <li key={line.productId} className="grid grid-cols-[5.5rem_1fr] gap-x-4 gap-y-3 border-b border-wash py-5 sm:grid-cols-[7rem_1fr_auto]">
                 <Link href={`/products/${line.slug}`} tabIndex={-1} aria-hidden="true" className="row-span-2 block aspect-square overflow-hidden bg-pit sm:row-span-1">

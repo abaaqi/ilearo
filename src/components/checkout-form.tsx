@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
 import { placeOrderAction, type CheckoutState } from "@/app/checkout/actions";
-import type { CheckoutField, PaymentMethod } from "@/lib/checkout-schema";
+import {
+  PAYMENT_METHOD_DESCRIPTIONS,
+  PAYMENT_METHOD_LABELS,
+  type CheckoutField,
+  type PaymentMethod,
+} from "@/lib/checkout-schema";
 import { formatNaira } from "@/lib/money";
 import { DELIVERY_ZONES, NIGERIAN_STATES, deliveryQuote, isNigerianState } from "@/lib/shipping";
 
@@ -226,15 +231,15 @@ function CheckoutFields({
           <div className="grid gap-3">
             <PaymentOption
               value="pay_on_delivery"
-              title="Pay on delivery"
-              description="Pay the rider in cash or by transfer when your order arrives."
+              title={PAYMENT_METHOD_LABELS.pay_on_delivery}
+              description={PAYMENT_METHOD_DESCRIPTIONS.pay_on_delivery}
               defaultChecked={defaultPayment === "pay_on_delivery"}
             />
             {bankTransferAvailable ? (
               <PaymentOption
                 value="bank_transfer"
-                title="Bank transfer"
-                description="Pay before we send it. You'll get our account details as soon as you place the order."
+                title={PAYMENT_METHOD_LABELS.bank_transfer}
+                description={PAYMENT_METHOD_DESCRIPTIONS.bank_transfer}
                 defaultChecked={defaultPayment === "bank_transfer"}
               />
             ) : null}

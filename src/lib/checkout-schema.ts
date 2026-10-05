@@ -10,6 +10,12 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   bank_transfer: "Bank transfer",
 };
 
+/** How each way to pay is explained at checkout, on the website and in the app. */
+export const PAYMENT_METHOD_DESCRIPTIONS: Record<PaymentMethod, string> = {
+  pay_on_delivery: "Pay the rider in cash or by transfer when your order arrives.",
+  bank_transfer: "Pay before we send it. You'll get our account details as soon as you place the order.",
+};
+
 const optionalText = (max: number, message: string) =>
   z
     .string()

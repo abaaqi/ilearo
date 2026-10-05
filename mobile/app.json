@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Ile Aro",
+    "slug": "ile-aro",
+    "version": "1.0.0",
+    "description": "Hand-dyed adire from Abeokuta. The Ile Aro shop, with the same account and cart as the website.",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "ilearo",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#eef2f8",
+    "ios": {
+      "bundleIdentifier": "ng.ilearo.shop",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "ng.ilearo.shop",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#141c45"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "Ile Aro",
+      "themeColor": "#141c45",
+      "backgroundColor": "#eef2f8"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#141c45",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120
+        }
+      ]
+    ],
+    "experiments": {
+      "reactCompiler": true
+    }
+  }
+}

@@ -26,6 +26,23 @@ create table if not exists sessions (
 );
 create index if not exists sessions_user_id_idx on sessions (user_id);
 create index if not exists sessions_expires_at_idx on sessions (expires_at);
+-- 'web' sessions live in a browser cookie; 'app' sessions are bearer tokens
+-- held by the mobile app. Both belong to the same users row.
+alter table sessions add column if not exists client text not null default 'web' check (client in ('web', 'app'));
+
+-- One-time codes that carry a finished Google sign-in from the phone's
+-- browser back into the mobile app. Only a SHA-256 hash of the code is kept,
+-- and it can only be swapped for a session by the app holding the PKCE
+-- verifier that matches code_challenge.
+create table if not exists app_sign_in_codes (
+  id             text primary key,
+  user_id        uuid not null references users (id) on delete cascade,
+  code_challenge text not null,
+  created_at     timestamptz not null default now(),
+  expires_at     timestamptz not null,
+  used_at        timestamptz
+);
+create index if not exists app_sign_in_codes_expires_at_idx on app_sign_in_codes (expires_at);
 
 -- The catalog. Prices are whole kobo (₦1 = 100 kobo) to avoid rounding.
 create table if not exists products (
@@ -65,6 +82,40 @@ create table if not exists cart_items (
   added_at   timestamptz not null default now(),
   primary key (cart_id, product_id)
 );
+
+-- Live carts. Every change to a cart's items gives the cart a new version
+-- number, whichever code made the change, so the website and the mobile app
+-- can each ask "has my cart changed since version N?" and refresh at once.
+-- Versions come from one sequence, so they only ever go up.
+create sequence if not exists cart_versions;
+alter table carts add column if not exists version bigint not null default 0;
+-- Where the latest change came from: 'web', 'app', or null if unknown.
+alter table carts add column if not exists changed_via text;
+
+create or replace function cart_items_changed() returns trigger
+language plpgsql as $$
+declare
+  target uuid;
+begin
+  if tg_op = 'DELETE' then
+    target := old.cart_id;
+  else
+    target := new.cart_id;
+  end if;
+  update carts
+     set version     = nextval('cart_versions'),
+         updated_at  = now(),
+         -- Set per transaction by the code that changes the cart.
+         changed_via = nullif(current_setting('ile_aro.client', true), '')
+   where id = target;
+  return null;
+end;
+$$;
+
+drop trigger if exists cart_items_changed on cart_items;
+create trigger cart_items_changed
+  after insert or update or delete on cart_items
+  for each row execute function cart_items_changed();
 
 -- Orders keep a copy of the delivery details and prices at the time of
 -- purchase, so later catalog changes never rewrite history.
@@ -134,3 +185,4 @@ alter table cart_items  enable row level security;
 alter table orders      enable row level security;
 alter table order_items enable row level security;
 alter table email_log   enable row level security;
+alter table app_sign_in_codes enable row level security;

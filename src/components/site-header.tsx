@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { getCurrentUser, type SessionUser } from "@/lib/auth/session";
 import { getCart } from "@/lib/cart";
 import { CATEGORIES } from "@/lib/catalog";
+import { LiveCart } from "./live-cart";
 import { LogoMark } from "./logo-mark";
 import { NavLinks, type NavLink } from "./nav-links";
 import { MobileNav } from "./mobile-nav";
@@ -14,22 +15,22 @@ const LINKS: NavLink[] = [
 ];
 
 /** The signed-in shopper and cart size, or "nobody, empty" if the database can't be reached. */
-async function headerData(): Promise<{ user: SessionUser | null; itemCount: number }> {
+async function headerData(): Promise<{ user: SessionUser | null; itemCount: number; version: number }> {
   try {
     const [user, cart] = await Promise.all([getCurrentUser(), getCart()]);
-    return { user, itemCount: cart.itemCount };
+    return { user, itemCount: cart.itemCount, version: cart.version };
   } catch (error) {
     // Next.js signals things like "this page is dynamic" by throwing; let those through.
     unstable_rethrow(error);
     // The header is on every page, so a database problem here mustn't take the whole site
     // down. Pages that need the database show their own error instead.
     console.error("[header] Couldn't load the account or cart:", error);
-    return { user: null, itemCount: 0 };
+    return { user: null, itemCount: 0, version: 0 };
   }
 }
 
 export async function SiteHeader() {
-  const { user, itemCount } = await headerData();
+  const { user, itemCount, version } = await headerData();
   const cart = { itemCount };
   const account = user ? { href: "/account", label: "Your account" } : { href: "/signin", label: "Sign in" };
 
@@ -69,6 +70,8 @@ export async function SiteHeader() {
           </Suspense>
         </div>
       </div>
+      {/* Signed-in carts are shared with the mobile app, so follow changes made there. */}
+      {user ? <LiveCart version={version} /> : null}
     </header>
   );
 }
